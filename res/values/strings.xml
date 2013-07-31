@@ -3,6 +3,10 @@
 
     <string name="app_name">Dokoiku</string>
     <string name="action_settings">Settings</string>
-    <string name="hello_world">Hello world!</string>
+
+    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_select_cities">SelectCities</string>
+
+    <string name="cities">市町村で行く場所を決める</string>
 
 </resources>
