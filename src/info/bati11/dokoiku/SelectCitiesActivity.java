@@ -1,12 +1,5 @@
 package info.bati11.dokoiku;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -20,7 +13,6 @@ import android.app.FragmentTransaction;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -33,6 +25,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.androidquery.AQuery;
+import com.androidquery.callback.AjaxCallback;
+import com.androidquery.callback.AjaxStatus;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMapOptions;
@@ -42,7 +37,8 @@ import com.google.android.gms.maps.model.LatLng;
 
 public class SelectCitiesActivity extends FragmentActivity {
 
-    public final static String YAHOO_PREFECTURE_API = "http://search.olp.yahooapis.jp/OpenLocalPlatform/V1/addressDirectory?appid=*****&output=json";
+    private final static String YAHOO_API_KEY = "****";
+    public final static String YAHOO_PREFECTURE_API = "http://search.olp.yahooapis.jp/OpenLocalPlatform/V1/addressDirectory?appid=" + YAHOO_API_KEY + "&output=json";
 
     private final static Map<String, String> cache = new HashMap<String, String>();
 
@@ -166,7 +162,7 @@ public class SelectCitiesActivity extends FragmentActivity {
             Spinner prefectureSpinner = (Spinner) findViewById(R.id.spinner_prefecture);
             int selectIndex = prefectureSpinner.getSelectedItemPosition();
 
-            Prefecture selectPrefecture = null;
+            final Prefecture selectPrefecture;
             Prefecture[] prefectures = Prefecture.values();
             if (selectIndex == 0) {
                 Log.d("DEBUG", "都道府県をランダムで選択します");
@@ -179,7 +175,14 @@ public class SelectCitiesActivity extends FragmentActivity {
 
             String cacheStr = cache.get(selectPrefecture.name());
             if (cacheStr == null) {
-                new HttpGetTask(selectPrefecture).execute(YAHOO_PREFECTURE_API+"&ac="+selectPrefecture.code());
+                final AQuery aq = new AQuery(this);
+                String url = YAHOO_PREFECTURE_API + "&ac=" + selectPrefecture.code();
+                aq.ajax(url, JSONObject.class, new AjaxCallback<JSONObject>(){
+                    @Override public void callback(String url, JSONObject json, AjaxStatus status) {
+                        if (json == null) Log.d("DEBUG", "Error:" + status.getCode());
+                        else render(selectPrefecture, json);
+                    }
+                });
             } else {
                 Log.d("DEBUG", "Use Cache!!");
                 render(selectPrefecture, cacheStr);
@@ -193,12 +196,22 @@ public class SelectCitiesActivity extends FragmentActivity {
     private void render(Prefecture prefecture, String jsonText) {
         TextView textView = (TextView) findViewById(R.id.result_spot);
         try {
-            JSONObject jsonObj = new JSONObject(jsonText);
+            JSONObject json = new JSONObject(jsonText);
+            render(prefecture, json);
+        } catch (JSONException e) {
+            Log.d("DEBUG", "Jsonへの変換中にエラーが発生しました", e);
+            textView.setText("Jsonへの変換に失敗しました");
+        }
+    }
+
+    private void render(Prefecture prefecture, JSONObject json) {
+        TextView textView = (TextView) findViewById(R.id.result_spot);
+        try {
             JSONArray cities =
-                jsonObj.getJSONArray("Feature")
-                       .getJSONObject(0)
-                       .getJSONObject("Property")
-                       .getJSONArray("AddressDirectory");
+                json.getJSONArray("Feature")
+                    .getJSONObject(0)
+                    .getJSONObject("Property")
+                    .getJSONArray("AddressDirectory");
 
             int index = new Random().nextInt(cities.length());
             JSONObject city = cities.getJSONObject(index);
@@ -229,81 +242,11 @@ public class SelectCitiesActivity extends FragmentActivity {
                 map.getMap().moveCamera(newLatLng);
             }
 
-            cache.put(prefecture.name(), jsonText);
-
+            cache.put(prefecture.name(), json.toString());
         } catch (JSONException e) {
             Log.d("DEBUG", "Jsonへの変換中にエラーが発生しました", e);
             textView.setText("Jsonへの変換に失敗しました");
         }
+
     }
-
-    /**
-     * HTTP GET リクエストを処理するクラス
-     */
-    private class HttpGetTask extends AsyncTask<String, Void, String> {
-        private final Prefecture prefecture;
-
-        public HttpGetTask(Prefecture prefecture) {
-            super();
-            this.prefecture = prefecture;
-        }
-
-        @Override
-        protected String doInBackground(String... urls) {
-            try {
-                return downloadUrl(urls[0]);
-            } catch (IOException e) {
-                return "Unable to retrieve web page. URL may be invalid.";
-            }
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            Log.d("DEBUG", "$$$$$$$$$$$$$$$$$$$$$$");
-            Log.d("DEBUG", result);
-            Log.d("DEBUG", "$$$$$$$$$$$$$$$$$$$$$$");
-            render(prefecture, result);
-       }
-    }
-
-    private String downloadUrl(String url) throws IOException {
-        InputStream is = null;
-        int len = 500;
-        String contentAsString = "";
-        try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-            conn.setReadTimeout(10000 /* milliseconds */);
-            conn.setConnectTimeout(15000 /* milliseconds */);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            // Starts the query
-            conn.connect();
-            int response = conn.getResponseCode();
-            Log.d("DEBUG", "The response is: " + response);
-            is = conn.getInputStream();
-
-            // Convert the InputStream into a string
-            contentAsString = readIt(is, len);
-
-        // Makes sure that the InputStream is closed after the app is
-        // finished using it.
-        } finally {
-            if (is != null) {
-                is.close();
-            }
-        }
-        return contentAsString;
-    }
-
-    private String readIt(InputStream stream, int len) throws IOException, UnsupportedEncodingException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            sb.append(line);
-        }
-        reader.close();
-        return sb.toString();
-    }
-
 }
