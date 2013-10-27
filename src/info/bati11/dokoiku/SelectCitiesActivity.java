@@ -22,6 +22,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -119,6 +120,9 @@ public class SelectCitiesActivity extends FragmentActivity {
 
         Spinner spinner = (Spinner) findViewById(R.id.spinner_prefecture);
         spinner.setAdapter(adapter);
+
+        Button okButton = (Button)findViewById(R.id.button_ok);
+        okButton.setVisibility(View.INVISIBLE);
     }
 
     /**
@@ -193,6 +197,11 @@ public class SelectCitiesActivity extends FragmentActivity {
         }
     }
 
+    public void determineSpot(View view) {
+        // TODO ストレージに行く先を書き込む
+        finish();
+    }
+
     private void render(Prefecture prefecture, String jsonText) {
         TextView textView = (TextView) findViewById(R.id.result_spot);
         try {
@@ -222,6 +231,8 @@ public class SelectCitiesActivity extends FragmentActivity {
             message.append(prefecture.label + " " + city.getString("Name"));
             message.append("\n");
             textView.setText(message);
+            Button okButton = (Button)findViewById(R.id.button_ok);
+            okButton.setVisibility(View.VISIBLE);
 
             String[] latlng = city.getJSONObject("Geometry").getString("Coordinates").split(",");
             double latitude = Double.valueOf(latlng[1]);
