@@ -4,12 +4,43 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal" >
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="#4e9aef"
+        android:gravity="center"
+        android:textColor="#ffffff"
+        android:textSize="32sp"
+        android:height="80sp"
+        android:text="DOKOIKU" />
 
     <Button
+        android:id="@+id/button_go_selectcities"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/cities"
         android:onClick="transit" />
+
+    <TextView
+        android:id="@+id/goal_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="今向かっているのは、" />
+
+    <TextView
+        android:id="@+id/goal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="32sp" />
+
+    <Button
+        android:id="@+id/button_clear_goal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="cancel"
+        android:onClick="clearGoal" />
 
 </LinearLayout>

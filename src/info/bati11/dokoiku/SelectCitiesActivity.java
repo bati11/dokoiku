@@ -9,8 +9,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.FragmentTransaction;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
@@ -44,6 +46,7 @@ public class SelectCitiesActivity extends FragmentActivity {
     private final static Map<String, String> cache = new HashMap<String, String>();
 
     private MapFragment map;
+    private String goal;
 
     private enum Prefecture {
         P01("北海道"),
@@ -122,7 +125,7 @@ public class SelectCitiesActivity extends FragmentActivity {
         spinner.setAdapter(adapter);
 
         Button okButton = (Button)findViewById(R.id.button_ok);
-        okButton.setVisibility(View.INVISIBLE);
+        okButton.setVisibility(View.GONE);
     }
 
     /**
@@ -198,7 +201,10 @@ public class SelectCitiesActivity extends FragmentActivity {
     }
 
     public void determineSpot(View view) {
-        // TODO ストレージに行く先を書き込む
+        SharedPreferences sharedPreferences = getSharedPreferences(MainActivity.PREF_NAME, Activity.MODE_PRIVATE);
+        sharedPreferences.edit()
+                         .putString(MainActivity.PREF_KEY_GOAL_NAME, goal)
+                         .commit();
         finish();
     }
 
@@ -225,10 +231,11 @@ public class SelectCitiesActivity extends FragmentActivity {
             int index = new Random().nextInt(cities.length());
             JSONObject city = cities.getJSONObject(index);
 
+            goal = prefecture.label + " " + city.getString("Name");
             StringBuilder message = new StringBuilder();
             message.append("Let's Go To");
             message.append("\n");
-            message.append(prefecture.label + " " + city.getString("Name"));
+            message.append(goal);
             message.append("\n");
             textView.setText(message);
             Button okButton = (Button)findViewById(R.id.button_ok);
